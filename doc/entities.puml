@@ -1,0 +1,46 @@
+@startuml
+
+entity "User" as user {
+  *id : size_t
+  --
+  *username : text
+  *login : text
+  *password : text
+  *date_of_registration: timestamp
+  *status: size_t
+}
+
+entity "Task" as task {
+  *id : size_t
+  --
+  *user_id : size_t
+  *content : text
+  *date_of_creation : timestamp
+  *deadline: timestamp
+  *status: size_t
+}
+
+entity "Comment" as comment {
+  *id : size_t
+  --
+  *task_id : size_t
+  *user_id : size_t
+  *content : text
+  *date_of_last_update: timestamp
+  *status: size_t
+}
+
+entity "Statisitics" as stat {
+  *task_id : size_t
+  --
+  *views : size_t
+  *likes : size_t
+}
+
+
+user ||--o{ task
+task -- stat
+task ||--o{ comment
+user ||--o{ comment
+
+@enduml
