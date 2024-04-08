@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  database:
+    build:
+      context: ./bd_users
+      dockerfile: Dockerfile
+    container_name: sqlite-db-starter
+    volumes:
+      - ./bd_users/users.db:/data/users.db
+    
+  rest-api:
+    build:
+      context: ./backend_registration
+      dockerfile: Dockerfile
+    container_name: rest-api
+    ports:
+      - "5001:5001"
+    depends_on:
+      - database
+    volumes:
+      - ./bd_users/users.db:/data/users.db
