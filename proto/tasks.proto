@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service TaskManager { 
+   rpc CreateTask(Task) returns (TaskResponse) {}
+   rpc UpdateTask(TaskWithId) returns (TaskResponse) {}
+   rpc DeleteTask(TaskId) returns (TaskResponse) {}
+   rpc GetMyTasks(TaskIds) returns (Tasks) {}
+}
+
+message TaskId {
+    uint64 id = 1;
+}
+
+message TaskIds {
+    repeated uint64 id = 1;
+}
+
+
+message Task {
+    string userId = 1;
+    string content = 2;
+    google.protobuf.Timestamp dateOfCreation = 3;
+    google.protobuf.Timestamp deadline = 4;
+    uint64 status = 5;
+}
+
+message Tasks {
+    repeated Task tasks = 1;
+}
+
+message TaskWithId {
+    uint64 id = 1;
+    Task task = 2;
+}
+
+message TaskResponse {
+    uint64 id = 1;
+    string status = 2;
+}

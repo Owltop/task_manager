@@ -1,13 +1,28 @@
 version: '3.8'
 
 services:
-  database:
+  postgres_users_db:
+    image: postgres
     build:
-      context: ./bd_users
+      context: ./postgresql_users_database
       dockerfile: Dockerfile
-    container_name: sqlite-db-starter
+    container_name: postgres-users_db
+    restart: always
     volumes:
-      - ./bd_users/users.db:/data/users.db
+      - ./postgresql_users_database/data:/var/lib/postgresql/data
+      - ./postgresql_users_database/docker-entrypoint.sh:/docker-entrypoint-initdb.d/initdb.sh
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    healthcheck:
+      test: "pg_isready -U postgres"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
     
   rest-api:
     build:
@@ -17,6 +32,6 @@ services:
     ports:
       - "5001:5001"
     depends_on:
-      - database
+      - postgres_users_db
     volumes:
       - ./bd_users/users.db:/data/users.db
