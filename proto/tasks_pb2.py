@@ -13,28 +13,25 @@ _sym_db = _symbol_database.Default()
 
 
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0btasks.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bgoogle/protobuf/empty.proto\"\x14\n\x06TaskId\x12\n\n\x02id\x18\x01 \x01(\x04\"\x15\n\x07TaskIds\x12\n\n\x02id\x18\x01 \x03(\x04\"\x99\x01\n\x04Task\x12\x0e\n\x06userId\x18\x01 \x01(\t\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x32\n\x0e\x64\x61teOfCreation\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x64\x65\x61\x64line\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06status\x18\x05 \x01(\x04\"\x1d\n\x05Tasks\x12\x14\n\x05tasks\x18\x01 \x03(\x0b\x32\x05.Task\"-\n\nTaskWithId\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x13\n\x04task\x18\x02 \x01(\x0b\x32\x05.Task\"*\n\x0cTaskResponse\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x0e\n\x06status\x18\x02 \x01(\t2\xa9\x01\n\x0bTaskManager\x12$\n\nCreateTask\x12\x05.Task\x1a\r.TaskResponse\"\x00\x12*\n\nUpdateTask\x12\x0b.TaskWithId\x1a\r.TaskResponse\"\x00\x12&\n\nDeleteTask\x12\x07.TaskId\x1a\r.TaskResponse\"\x00\x12 \n\nGetMyTasks\x12\x08.TaskIds\x1a\x06.Tasks\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0btasks.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x99\x01\n\x04Task\x12\x0e\n\x06userId\x18\x01 \x01(\x04\x12\x0f\n\x07\x63ontent\x18\x02 \x01(\t\x12\x32\n\x0e\x64\x61teOfCreation\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12,\n\x08\x64\x65\x61\x64line\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.Timestamp\x12\x0e\n\x06status\x18\x05 \x01(\x04\"\x1d\n\x05Tasks\x12\x14\n\x05tasks\x18\x01 \x03(\x0b\x32\x05.Task\"-\n\nTaskWithId\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x13\n\x04task\x18\x02 \x01(\x0b\x32\x05.Task\")\n\x0bTaskWithIds\x12\x1a\n\x05tasks\x18\x01 \x03(\x0b\x32\x0b.TaskWithId\"*\n\x0cTaskResponse\x12\n\n\x02id\x18\x01 \x01(\x04\x12\x0e\n\x06status\x18\x02 \x01(\t2\xd5\x01\n\x0bTaskManager\x12$\n\nCreateTask\x12\x05.Task\x1a\r.TaskResponse\"\x00\x12*\n\nUpdateTask\x12\x0b.TaskWithId\x1a\r.TaskResponse\"\x00\x12*\n\nDeleteTask\x12\x0b.TaskWithId\x1a\r.TaskResponse\"\x00\x12#\n\nGetMyTasks\x12\x0b.TaskWithId\x1a\x06.Tasks\"\x00\x12#\n\x0bGetTaskById\x12\x0b.TaskWithId\x1a\x05.Task\"\x00\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'tasks_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_TASKID']._serialized_start=77
-  _globals['_TASKID']._serialized_end=97
-  _globals['_TASKIDS']._serialized_start=99
-  _globals['_TASKIDS']._serialized_end=120
-  _globals['_TASK']._serialized_start=123
-  _globals['_TASK']._serialized_end=276
-  _globals['_TASKS']._serialized_start=278
-  _globals['_TASKS']._serialized_end=307
-  _globals['_TASKWITHID']._serialized_start=309
-  _globals['_TASKWITHID']._serialized_end=354
-  _globals['_TASKRESPONSE']._serialized_start=356
-  _globals['_TASKRESPONSE']._serialized_end=398
-  _globals['_TASKMANAGER']._serialized_start=401
-  _globals['_TASKMANAGER']._serialized_end=570
+  _globals['_TASK']._serialized_start=49
+  _globals['_TASK']._serialized_end=202
+  _globals['_TASKS']._serialized_start=204
+  _globals['_TASKS']._serialized_end=233
+  _globals['_TASKWITHID']._serialized_start=235
+  _globals['_TASKWITHID']._serialized_end=280
+  _globals['_TASKWITHIDS']._serialized_start=282
+  _globals['_TASKWITHIDS']._serialized_end=323
+  _globals['_TASKRESPONSE']._serialized_start=325
+  _globals['_TASKRESPONSE']._serialized_end=367
+  _globals['_TASKMANAGER']._serialized_start=370
+  _globals['_TASKMANAGER']._serialized_end=583
 # @@protoc_insertion_point(module_scope)

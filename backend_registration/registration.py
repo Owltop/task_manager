@@ -1,24 +1,50 @@
 import logging
 import os
-import sqlite3
 from flask import Flask, request, jsonify
 import psycopg2
+
+import grpc
+import google.protobuf.json_format
+import google.protobuf.empty_pb2
+import google.protobuf.json_format as json_format
+
+
+from proto import tasks_pb2
+from proto import tasks_pb2_grpc 
 
 import util
 
 app = Flask(__name__)
-db_path = '../data/users.db' # По факту обычный файлик, если он будет лежать в отдельном контейнере, то 1) как к нему получить доступ из другого контейнера? 2) Как сделаь так, чтобы контейнер с бд работал бесконечно(с костылями поянтно как)
 
-dbname = "main"
-user = "postgres"
-password = "password123"
-host = "postgres-users_db"
+dbname = os.environ.get('POSTGRES_DB', 'main')
+user = os.environ.get('POSTGRES_USER', 'postgres')
+password = os.environ.get('POSTGRES_PASSWORD', 'password123')
+host = "postgres_users_db"
 
 
-# Функция для подключения к базе данных
 def connect_db():
     conn = psycopg2.connect(database=dbname, user=user, password=password, host=host)
     return conn
+
+def get_user_id_by_token(token):
+    try:
+        cursor = None
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM users WHERE token = %s;", (token,))
+        user = cursor.fetchone()
+        if user:
+            user_id = user[0]
+            return user_id
+    except Exception as e:
+        conn.rollback()
+        return "-1"
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -37,8 +63,8 @@ def register_user():
         conn = connect_db()
         cur = conn.cursor()
 
-        # app.logger.debug(data['username'])
-        # app.logger.debug(type(data['username']))
+        app.logger.debug(data['username'])
+        app.logger.debug(type(data['username']))
         
         cur.execute("SELECT * FROM users WHERE username = %s;", (username,))
         user = cur.fetchone()
@@ -62,7 +88,7 @@ def register_user():
 @app.route('/update', methods=['PUT'])
 def update_user():
     data = request.json
-    token = data.get('token')
+    token = request.headers.get('token')
     
     if not token:
         return jsonify({'message': 'Token is missing'}), 400
@@ -86,13 +112,16 @@ def update_user():
                 update_data[field] = data[field]
 
         if len(update_data) > 0:
-            update_query = ", ".join([f"{field} = %s" for field in update_data.keys()])
+            update_query = ", ".join([f"{field} = '%s'" for field in update_data.keys()])
             values = list(update_data.values())
             values.append(token)
-            app.logger.debug(update_query)
-            app.logger.debug(values)
 
-            cursor.execute(f"UPDATE users SET {update_query} WHERE token = %s;", values)
+            prepare_query = f"UPDATE users SET {update_query} WHERE token = '%s';"
+            app.logger.debug(prepare_query)
+            query = prepare_query % (values[0], values[1])
+            app.logger.debug(query)
+            cursor.execute(query)
+            conn.commit()
             return jsonify({'message': 'User information successfully updated'})
         else:
             return jsonify({'message': 'Nothing to update'}), 400
@@ -144,6 +173,259 @@ def authenticate_user():
             cursor.close()
         if conn is not None:
             conn.close()
+
+@app.route('/create_task', methods=['POST'])
+def create_task():
+    data = request.json
+    token = request.headers.get('token')
+    if not data.get('description') or not token:
+        return (
+            jsonify({'message': 'Missing description field or token'}),
+            404
+        )
+    content = data.get('description', "")
+    deadline = data.get('deadline', "1970-01-01T01:00:00.000Z")
+    app.logger.debug("kek0")
+    
+    try:
+        user_id = get_user_id_by_token(token)
+        if not user_id:
+            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        json_data = {
+            "userId": user_id,
+            "content": content,
+            "deadline": deadline,
+            "status": 0
+        }
+        # deadline format 2018-03-07T01:00:00.000Z
+
+        app.logger.debug("kek1")
+
+        proto_message=google.protobuf.json_format.ParseDict(json_data, tasks_pb2.Task())
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+
+        app.logger.debug(proto_message)
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        app.logger.debug("kek3")
+        response = stub.CreateTask(proto_message)
+        app.logger.debug("kek4")
+        res =  google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug("kek5")
+        app.logger.debug(res)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/update_task', methods=['PUT'])
+def update_task():
+    data = request.json
+    token = request.headers.get('token')
+    if not data.get('id') or not token:
+        return (
+            jsonify({'message': 'Missing id of the task or token'}),
+            404
+        )
+    id = data.get('id', 0)
+    content = data.get('content', "")
+    deadline = data.get('deadline', "1970-01-01T01:00:00.000Z")
+    status = data.get('status', 0)
+    app.logger.debug("kek0")
+    
+    try:
+        user_id = get_user_id_by_token(token)
+        if not user_id:
+            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        
+        proto = tasks_pb2.TaskWithId()
+        json_data = {
+            "id": int(id),
+            "task": {
+                "userId": user_id,
+                "content": content,
+                "deadline": deadline,
+                "status": int(status)
+            }
+        }
+        # deadline format 2018-03-07T01:00:00.000Z
+
+        app.logger.debug("kek1 " + content)
+        app.logger.debug(json_data)
+
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+
+        app.logger.debug(proto)
+        # proto.id = id
+        # proto.task.userId = task_proto.userId
+        # proto.task.content = task_proto.content
+        # proto.task.deadline = task_proto.deadline
+        # proto.task.status = task_proto.status
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+
+        app.logger.debug("kek2")
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        app.logger.debug("kek3")
+        response = stub.UpdateTask(proto)
+        app.logger.debug("kek4")
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug("kek5")
+        app.logger.debug(res)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_task', methods=['DELETE'])
+def delete_task():
+    data = request.json
+    token = request.headers.get('token')
+    if not data.get('id') or not token:
+        return (
+            jsonify({'message': 'Missing id of the task or token'}),
+            404
+        )
+    id = data.get('id', 0)
+
+    app.logger.debug("kek0")
+    
+    try:
+        user_id = get_user_id_by_token(token)
+        if not user_id:
+            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        
+        proto = tasks_pb2.TaskWithId()
+        json_data = {
+            "id": int(id),
+            "task": {
+                "userId": user_id
+            }
+        }
+
+        app.logger.debug(json_data)
+
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+
+        app.logger.debug(proto)
+
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+
+        app.logger.debug("kek2")
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        app.logger.debug("kek3")
+        response = stub.DeleteTask(proto)
+        app.logger.debug("kek4")
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug("kek5")
+        app.logger.debug(res)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_my_tasks', methods=['GET'])
+def get_my_tasks():
+    token = request.headers.get('token')
+    if not token:
+        return (
+            jsonify({'message': 'Missing token'}),
+            404
+        )
+
+    app.logger.debug("kek0")
+    
+    try:
+        user_id = get_user_id_by_token(token)
+        if not user_id:
+            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        
+        proto = tasks_pb2.TaskWithId()
+        json_data = {
+            "task": {
+                "userId": user_id
+            }
+        }
+
+        app.logger.debug(json_data)
+
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+
+        app.logger.debug(proto)
+
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+
+        app.logger.debug("kek2")
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        app.logger.debug("kek3")
+        response = stub.GetMyTasks(proto)
+        app.logger.debug("kek4")
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug("kek5")
+        app.logger.debug(res)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/get_task_by_id', methods=['GET'])
+def get_task_by_id():
+    data = request.json
+    token = request.headers.get('token')
+    if not data.get('id') or not token:
+        return (
+            jsonify({'message': 'Missing id of the task or token'}),
+            404
+        )
+    id = data.get('id', 0)
+    
+    try:
+        user_id = get_user_id_by_token(token)
+        if not user_id:
+            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        
+        proto = tasks_pb2.TaskWithId()
+        json_data = {
+            "id": int(id),
+            "task": {
+                "userId": user_id
+            }
+        }
+
+        app.logger.debug(json_data)
+
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+
+        app.logger.debug(proto)
+
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+
+        app.logger.debug("kek2")
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        app.logger.debug("kek3")
+        response = stub.GetTaskById(proto)
+        app.logger.debug("kek4")
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug("kek5")
+        app.logger.debug(res)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

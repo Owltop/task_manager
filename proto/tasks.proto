@@ -1,26 +1,17 @@
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
-import "google/protobuf/empty.proto";
 
 service TaskManager { 
    rpc CreateTask(Task) returns (TaskResponse) {}
    rpc UpdateTask(TaskWithId) returns (TaskResponse) {}
-   rpc DeleteTask(TaskId) returns (TaskResponse) {}
-   rpc GetMyTasks(TaskIds) returns (Tasks) {}
+   rpc DeleteTask(TaskWithId) returns (TaskResponse) {}
+   rpc GetMyTasks(TaskWithId) returns (Tasks) {}
+   rpc GetTaskById(TaskWithId) returns (Task) {}
 }
-
-message TaskId {
-    uint64 id = 1;
-}
-
-message TaskIds {
-    repeated uint64 id = 1;
-}
-
 
 message Task {
-    string userId = 1;
+    uint64 userId = 1;
     string content = 2;
     google.protobuf.Timestamp dateOfCreation = 3;
     google.protobuf.Timestamp deadline = 4;
@@ -34,6 +25,10 @@ message Tasks {
 message TaskWithId {
     uint64 id = 1;
     Task task = 2;
+}
+
+message TaskWithIds {
+    repeated TaskWithId tasks = 1;
 }
 
 message TaskResponse {

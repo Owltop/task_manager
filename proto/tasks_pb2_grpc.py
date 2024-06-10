@@ -51,13 +51,18 @@ class TaskManagerStub(object):
                 _registered_method=True)
         self.DeleteTask = channel.unary_unary(
                 '/TaskManager/DeleteTask',
-                request_serializer=tasks__pb2.TaskId.SerializeToString,
+                request_serializer=tasks__pb2.TaskWithId.SerializeToString,
                 response_deserializer=tasks__pb2.TaskResponse.FromString,
                 _registered_method=True)
         self.GetMyTasks = channel.unary_unary(
                 '/TaskManager/GetMyTasks',
-                request_serializer=tasks__pb2.TaskIds.SerializeToString,
+                request_serializer=tasks__pb2.TaskWithId.SerializeToString,
                 response_deserializer=tasks__pb2.Tasks.FromString,
+                _registered_method=True)
+        self.GetTaskById = channel.unary_unary(
+                '/TaskManager/GetTaskById',
+                request_serializer=tasks__pb2.TaskWithId.SerializeToString,
+                response_deserializer=tasks__pb2.Task.FromString,
                 _registered_method=True)
 
 
@@ -88,6 +93,12 @@ class TaskManagerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetTaskById(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_TaskManagerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -103,13 +114,18 @@ def add_TaskManagerServicer_to_server(servicer, server):
             ),
             'DeleteTask': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteTask,
-                    request_deserializer=tasks__pb2.TaskId.FromString,
+                    request_deserializer=tasks__pb2.TaskWithId.FromString,
                     response_serializer=tasks__pb2.TaskResponse.SerializeToString,
             ),
             'GetMyTasks': grpc.unary_unary_rpc_method_handler(
                     servicer.GetMyTasks,
-                    request_deserializer=tasks__pb2.TaskIds.FromString,
+                    request_deserializer=tasks__pb2.TaskWithId.FromString,
                     response_serializer=tasks__pb2.Tasks.SerializeToString,
+            ),
+            'GetTaskById': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetTaskById,
+                    request_deserializer=tasks__pb2.TaskWithId.FromString,
+                    response_serializer=tasks__pb2.Task.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -191,7 +207,7 @@ class TaskManager(object):
             request,
             target,
             '/TaskManager/DeleteTask',
-            tasks__pb2.TaskId.SerializeToString,
+            tasks__pb2.TaskWithId.SerializeToString,
             tasks__pb2.TaskResponse.FromString,
             options,
             channel_credentials,
@@ -218,8 +234,35 @@ class TaskManager(object):
             request,
             target,
             '/TaskManager/GetMyTasks',
-            tasks__pb2.TaskIds.SerializeToString,
+            tasks__pb2.TaskWithId.SerializeToString,
             tasks__pb2.Tasks.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetTaskById(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/TaskManager/GetTaskById',
+            tasks__pb2.TaskWithId.SerializeToString,
+            tasks__pb2.Task.FromString,
             options,
             channel_credentials,
             insecure,

@@ -1,0 +1,13 @@
+curl -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "example_user3", "password": "esxample_password"}'
+
+curl -X PUT http://localhost:5001/update -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"email": "kek@yвa.ru"}'
+
+curl -X POST http://localhost:5001/create_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"description": "keklol"}'
+
+curl -X PUT http://localhost:5001/update_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 5, "content": "ababab"}'
+
+curl -X DELETE http://localhost:5001/delete_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 15}'
+
+curl -X GET http://localhost:5001/get_my_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v"
+
+curl -X GET http://localhost:5001/get_task_by_id -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 15}'
