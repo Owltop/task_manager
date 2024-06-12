@@ -130,13 +130,13 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
             cursor = conn.cursor()
             logger.debug("kek1")
 
-            cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s;", (request.id, request.task.userId,))
+            cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s;", (request.id, request.userId,))
             task = cursor.fetchone()
             logger.debug("kek2")
 
             if not task:
                 conn.close()
-                return proto.tasks_pb2.TaskResponse(status=str("No such task")) # через id код возрврата
+                return proto.tasks_pb2.TaskResponse(status=str("No such task"), id=404) # через id код возрврата
             
             logger.debug("kek3")
 
@@ -155,7 +155,7 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
             if conn is not None:
                 conn.close()
     
-    def GetMyTasks(self, request, context):
+    def GetTasks(self, request, context):
         try:
             cursor = None
             conn = connect_db()
@@ -163,8 +163,11 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
             logger.debug("kek1")
 
             tasks_proto = proto.tasks_pb2.Tasks()
-
-            query = "SELECT * FROM tasks WHERE user_id = %s ORDER BY id LIMIT 10 OFFSET 0;" % (request.task.userId)
+            query = ""
+            if request.userId != 0:
+                query = "SELECT * FROM tasks WHERE user_id = %s ORDER BY id LIMIT %d OFFSET %d;" % (request.userId, request.size, request.offset)
+            else:
+                query = "SELECT * FROM tasks ORDER BY id LIMIT %d OFFSET %d;" % (request.size, request.offset)
             logger.debug(query)
             cursor.execute(query)
             logger.debug("kek22")
@@ -181,8 +184,8 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
                     logger.debug(row[3])
                     date_of_creation = str(row[3])
                     logger.debug(date_of_creation)
-                    logger.debug("lol")
-                    # task.dateOfCreation.CopyFrom(date_of_creation)
+
+                    # task.dateOfCreation.CopyFrom(date_of_creation) # TODO: fix conversion
                 logger.debug("kek3")
 
                 if row[4]:
@@ -215,13 +218,17 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
             cursor = conn.cursor()
             logger.debug("kek1")
 
-            cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s;", (request.id, request.task.userId,))
+            if request.userId != 0:
+                cursor.execute("SELECT * FROM tasks WHERE id = %s AND user_id = %s;", (request.id, request.userId,))
+            else:
+                cursor.execute("SELECT * FROM tasks WHERE id = %s;", (request.id,))
+            
             task_row = cursor.fetchone()
             logger.debug("kek2")
 
             if not task_row:
                 conn.close()
-                return proto.tasks_pb2.TaskResponse(status=str("No such task")) # через id код возрврата
+                return proto.tasks_pb2.Task(status= 404)
 
             task = proto.tasks_pb2.Task()
             task.userId = int(task_row[1])

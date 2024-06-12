@@ -2,12 +2,18 @@ curl -X POST http://localhost:5001/authenticate -H "Content-Type: application/js
 
 curl -X PUT http://localhost:5001/update -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"email": "kek@yвa.ru"}'
 
-curl -X POST http://localhost:5001/create_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"description": "keklol"}'
+curl -X POST http://localhost:5001/create_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"description": "test3"}'
 
-curl -X PUT http://localhost:5001/update_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 5, "content": "ababab"}'
+curl -X PUT http://localhost:5001/update_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"id": 18, "content": "ababab"}'
 
-curl -X DELETE http://localhost:5001/delete_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 15}'
+curl -X DELETE http://localhost:5001/delete_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"id": 21}'
 
-curl -X GET http://localhost:5001/get_my_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v"
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"size": 100}'
 
-curl -X GET http://localhost:5001/get_task_by_id -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 15}'
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"size": 100, "show_my_tasks": 1}'
+
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"size": 100, "show_my_tasks": 1}'
+
+curl -X GET http://localhost:5001/get_task_by_id -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 21}'
+
+curl -v -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "eexample_user3", "password": "esxample_password"}' 

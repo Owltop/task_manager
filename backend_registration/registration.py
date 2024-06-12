@@ -299,12 +299,10 @@ def delete_task():
         if not user_id:
             return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
         
-        proto = tasks_pb2.TaskWithId()
+        proto = tasks_pb2.TaskShort()
         json_data = {
             "id": int(id),
-            "task": {
-                "userId": user_id
-            }
+            "userId": user_id
         }
 
         app.logger.debug(json_data)
@@ -326,32 +324,40 @@ def delete_task():
         res = google.protobuf.json_format.MessageToDict(response)
         app.logger.debug("kek5")
         app.logger.debug(res)
-        return res
+        code = 200
+        if response.id == 404:
+            code = 404
+        return res, code
     except Exception as e:
         app.logger.debug(str(e))
         return jsonify({'error': str(e)}), 500
 
-@app.route('/get_my_tasks', methods=['GET'])
-def get_my_tasks():
+@app.route('/get_tasks', methods=['GET'])
+def get_tasks(): # add paginagition
+
     token = request.headers.get('token')
-    if not token:
-        return (
-            jsonify({'message': 'Missing token'}),
-            404
-        )
+    data = request.json
 
     app.logger.debug("kek0")
+    offset = data.get('offset', 0)
+    size = data.get('size', 10)
+    show_my_tasks = data.get('show_my_tasks', 0)
+    app.logger.debug("kek11")
     
     try:
-        user_id = get_user_id_by_token(token)
-        if not user_id:
-            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        user_id = 0
+        if show_my_tasks == 1:
+            user_id = get_user_id_by_token(token)
+            if not user_id:
+                return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
         
-        proto = tasks_pb2.TaskWithId()
+        app.logger.debug("kek12")
+        
+        proto = tasks_pb2.Pagination()
         json_data = {
-            "task": {
-                "userId": user_id
-            }
+            "userId": user_id,
+            "offset": offset,
+            "size": size
         }
 
         app.logger.debug(json_data)
@@ -368,7 +374,7 @@ def get_my_tasks():
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
         app.logger.debug("kek3")
-        response = stub.GetMyTasks(proto)
+        response = stub.GetTasks(proto)
         app.logger.debug("kek4")
         res = google.protobuf.json_format.MessageToDict(response)
         app.logger.debug("kek5")
@@ -381,26 +387,27 @@ def get_my_tasks():
 
 @app.route('/get_task_by_id', methods=['GET'])
 def get_task_by_id():
-    data = request.json
     token = request.headers.get('token')
-    if not data.get('id') or not token:
+    data = request.json
+    if not data.get('id'):
         return (
-            jsonify({'message': 'Missing id of the task or token'}),
+            jsonify({'message': 'Missing id of the task'}),
             404
         )
     id = data.get('id', 0)
+    show_my_task = data.get('show_my_task', 0)
     
     try:
-        user_id = get_user_id_by_token(token)
-        if not user_id:
-            return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
+        user_id = 0
+        if show_my_task == 1:
+            user_id = get_user_id_by_token(token)
+            if not user_id:
+                return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
         
-        proto = tasks_pb2.TaskWithId()
+        proto = tasks_pb2.TaskShort()
         json_data = {
             "id": int(id),
-            "task": {
-                "userId": user_id
-            }
+            "userId": user_id
         }
 
         app.logger.debug(json_data)
@@ -422,7 +429,10 @@ def get_task_by_id():
         res = google.protobuf.json_format.MessageToDict(response)
         app.logger.debug("kek5")
         app.logger.debug(res)
-        return res
+        code = 200
+        if response.status == 404:
+            code = 404
+        return res, code
     except Exception as e:
         app.logger.debug(str(e))
         return jsonify({'error': str(e)}), 500

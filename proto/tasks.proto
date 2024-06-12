@@ -5,9 +5,9 @@ import "google/protobuf/timestamp.proto";
 service TaskManager { 
    rpc CreateTask(Task) returns (TaskResponse) {}
    rpc UpdateTask(TaskWithId) returns (TaskResponse) {}
-   rpc DeleteTask(TaskWithId) returns (TaskResponse) {}
-   rpc GetMyTasks(TaskWithId) returns (Tasks) {}
-   rpc GetTaskById(TaskWithId) returns (Task) {}
+   rpc DeleteTask(TaskShort) returns (TaskResponse) {} // need user_id to identify user
+   rpc GetTasks(Pagination) returns (Tasks) {} // if user_id is not null - only his tasks
+   rpc GetTaskById(TaskShort) returns (Task) {}
 }
 
 message Task {
@@ -27,8 +27,15 @@ message TaskWithId {
     Task task = 2;
 }
 
-message TaskWithIds {
-    repeated TaskWithId tasks = 1;
+message TaskShort {
+    uint64 id = 1;
+    uint64 userId = 2;
+}
+
+message Pagination {
+    uint64 offset = 1;
+    uint64 size = 2;
+    uint64 userId = 3;
 }
 
 message TaskResponse {
