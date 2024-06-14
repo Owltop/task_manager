@@ -1,20 +1,20 @@
-import logging
-import os
+import json
 from flask import Flask, request, jsonify
-import psycopg2
 
-import grpc
-import google.protobuf.json_format
-import google.protobuf.empty_pb2
-import google.protobuf.json_format as json_format
-
+from kafka import KafkaProducer
 
 from proto import tasks_pb2
-from proto import tasks_pb2_grpc 
+from proto import tasks_pb2_grpc
+import google.protobuf.empty_pb2
+import google.protobuf.json_format
+import google.protobuf.json_format as json_format
+import grpc
 
+import logging
+import os
+import psycopg2
+import time
 import util
-
-app = Flask(__name__)
 
 dbname = os.environ.get('POSTGRES_DB', 'main')
 user = os.environ.get('POSTGRES_USER', 'postgres')
@@ -45,6 +45,32 @@ def get_user_id_by_token(token):
             cursor.close()
         if conn is not None:
             conn.close()
+
+def create_kafka_producer():
+    while True:
+        try:
+            producer = KafkaProducer(bootstrap_servers='kafka:9092',
+                                     value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+            return producer
+        except Exception:
+            time.sleep(5)
+
+KAFKA_CALLBACK_STATUS = 0
+
+def send_message_to_kafka(topic, message):
+    producer.send(topic, message).add_callback(kafka_success_callback).add_errback(kafka_error_callback)
+    producer.flush()
+
+def kafka_success_callback(record_metadata):
+    KAFKA_CALLBACK_STATUS = 0
+    print('Message sent successfully to topic %s partition %d offset %d' %
+          (record_metadata.topic, record_metadata.partition, record_metadata.offset))
+
+def kafka_error_callback(excp):
+    KAFKA_CALLBACK_STATUS = 1
+    print('Message delivery failed: %s' % excp)
+
+app = Flask(__name__)
 
 @app.route('/register', methods=['POST'])
 def register_user():
@@ -85,7 +111,7 @@ def register_user():
         if conn is not None:
             conn.close()
 
-@app.route('/update', methods=['PUT'])
+@app.route('/update_user', methods=['PUT'])
 def update_user():
     data = request.json
     token = request.headers.get('token')
@@ -185,7 +211,7 @@ def create_task():
         )
     content = data.get('description', "")
     deadline = data.get('deadline', "1970-01-01T01:00:00.000Z")
-    app.logger.debug("kek0")
+    
     
     try:
         user_id = get_user_id_by_token(token)
@@ -199,7 +225,7 @@ def create_task():
         }
         # deadline format 2018-03-07T01:00:00.000Z
 
-        app.logger.debug("kek1")
+        
 
         proto_message=google.protobuf.json_format.ParseDict(json_data, tasks_pb2.Task())
         grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
@@ -209,11 +235,11 @@ def create_task():
 
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
-        app.logger.debug("kek3")
+        
         response = stub.CreateTask(proto_message)
-        app.logger.debug("kek4")
+        
         res =  google.protobuf.json_format.MessageToDict(response)
-        app.logger.debug("kek5")
+        
         app.logger.debug(res)
         return res
     except Exception as e:
@@ -233,50 +259,40 @@ def update_task():
     content = data.get('content', "")
     deadline = data.get('deadline', "1970-01-01T01:00:00.000Z")
     status = data.get('status', 0)
-    app.logger.debug("kek0")
     
     try:
         user_id = get_user_id_by_token(token)
         if not user_id:
             return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
         
-        proto = tasks_pb2.TaskWithId()
+        proto = tasks_pb2.Task()
         json_data = {
             "id": int(id),
-            "task": {
-                "userId": user_id,
-                "content": content,
-                "deadline": deadline,
-                "status": int(status)
-            }
+            "userId": user_id,
+            "content": content,
+            "deadline": deadline,
+            "status": int(status)
         }
-        # deadline format 2018-03-07T01:00:00.000Z
 
-        app.logger.debug("kek1 " + content)
         app.logger.debug(json_data)
 
         json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
 
         app.logger.debug(proto)
-        # proto.id = id
-        # proto.task.userId = task_proto.userId
-        # proto.task.content = task_proto.content
-        # proto.task.deadline = task_proto.deadline
-        # proto.task.status = task_proto.status
         grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
 
-        app.logger.debug("kek2")
+        
         app.logger.debug(grpc_server_address)
-
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
-        app.logger.debug("kek3")
         response = stub.UpdateTask(proto)
-        app.logger.debug("kek4")
         res = google.protobuf.json_format.MessageToDict(response)
-        app.logger.debug("kek5")
+        
         app.logger.debug(res)
-        return res
+        code = 200
+        if response.id == 404:
+            code = 404
+        return res, code
     except Exception as e:
         app.logger.debug(str(e))
         return jsonify({'error': str(e)}), 500
@@ -292,7 +308,7 @@ def delete_task():
         )
     id = data.get('id', 0)
 
-    app.logger.debug("kek0")
+    
     
     try:
         user_id = get_user_id_by_token(token)
@@ -313,16 +329,16 @@ def delete_task():
 
         grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
 
-        app.logger.debug("kek2")
+        
         app.logger.debug(grpc_server_address)
 
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
-        app.logger.debug("kek3")
+        
         response = stub.DeleteTask(proto)
-        app.logger.debug("kek4")
+        
         res = google.protobuf.json_format.MessageToDict(response)
-        app.logger.debug("kek5")
+        
         app.logger.debug(res)
         code = 200
         if response.id == 404:
@@ -333,16 +349,16 @@ def delete_task():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get_tasks', methods=['GET'])
-def get_tasks(): # add paginagition
+def get_tasks():
 
     token = request.headers.get('token')
     data = request.json
 
-    app.logger.debug("kek0")
+    
     offset = data.get('offset', 0)
     size = data.get('size', 10)
     show_my_tasks = data.get('show_my_tasks', 0)
-    app.logger.debug("kek11")
+    
     
     try:
         user_id = 0
@@ -351,7 +367,7 @@ def get_tasks(): # add paginagition
             if not user_id:
                 return jsonify({'error': "No user tith such token, authenticate one more time"}), 400
         
-        app.logger.debug("kek12")
+        
         
         proto = tasks_pb2.Pagination()
         json_data = {
@@ -368,16 +384,15 @@ def get_tasks(): # add paginagition
 
         grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
 
-        app.logger.debug("kek2")
         app.logger.debug(grpc_server_address)
 
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
-        app.logger.debug("kek3")
+        
         response = stub.GetTasks(proto)
-        app.logger.debug("kek4")
+        
         res = google.protobuf.json_format.MessageToDict(response)
-        app.logger.debug("kek5")
+        
         app.logger.debug(res)
         return res
     except Exception as e:
@@ -415,19 +430,13 @@ def get_task_by_id():
         json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
 
         app.logger.debug(proto)
-
         grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
-
-        app.logger.debug("kek2")
         app.logger.debug(grpc_server_address)
-
         channel = grpc.insecure_channel(grpc_server_address)
         stub = tasks_pb2_grpc.TaskManagerStub(channel)
-        app.logger.debug("kek3")
         response = stub.GetTaskById(proto)
-        app.logger.debug("kek4")
+        
         res = google.protobuf.json_format.MessageToDict(response)
-        app.logger.debug("kek5")
         app.logger.debug(res)
         code = 200
         if response.status == 404:
@@ -437,8 +446,65 @@ def get_task_by_id():
         app.logger.debug(str(e))
         return jsonify({'error': str(e)}), 500
 
+@app.route('/comment_task', methods=['POST'])
+def comment_task():
+    token = request.headers.get('token')
+
+    data = request.json
+    task_id = data.get('task_id')
+    comment = data.get('comment')
+    
+    if not token or not task_id or not comment:
+        return jsonify({'message': 'Token or data is missing'}), 400
+    if not util.is_convertible_to_int(task_id):
+        return jsonify({'message': 'Invalid format'}), 400
+    
+    user_id = get_user_id_by_token(token)
+
+    topic = 'comments'
+    message = {
+        'task_id': task_id,
+        'comment': comment,
+        'user_id': user_id
+    }
+    send_message_to_kafka(topic, message)
+    if KAFKA_CALLBACK_STATUS == 0:
+        return jsonify({'status': 'OK'}), 200
+    else:
+        return jsonify({'status': 'Server error'}), 500
+
+@app.route('/like_task', methods=['PUT'])
+def like_task():
+    token = request.headers.get('token')
+
+    data = request.json
+    task_id = data.get('task_id')
+    
+    if not token or not task_id:
+        return jsonify({'message': 'Token or data is missing'}), 400
+    if not util.is_convertible_to_int(task_id):
+        return jsonify({'message': 'Invalid format'}), 400
+    
+    user_id = get_user_id_by_token(token)
+
+    topic = 'likes'
+    message = {
+        'task_id': task_id,
+        'user_id': user_id
+    }
+    send_message_to_kafka(topic, message)
+    if KAFKA_CALLBACK_STATUS == 0:
+        return jsonify({'status': 'OK'}), 200
+    else:
+        return jsonify({'status': 'Server error'}), 500
+
+@app.route('/ping', methods=['GET'])
+def ping():
+    return jsonify({'status': 'OK'}), 200
+
 
 if __name__ == '__main__':
     logger = logging.getLogger("server")
     logger.setLevel(logging.DEBUG)
+    producer = create_kafka_producer()
     app.run(debug=True, port=5001, host='0.0.0.0')

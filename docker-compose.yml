@@ -45,6 +45,28 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres_statistics_db:
+    image: postgres
+    build:
+      context: ./postgresql_statistics_database
+      dockerfile: Dockerfile
+    container_name: postgres-statistics_db
+    restart: always
+    volumes:
+      - ./postgresql_statistics_database/data:/var/lib/postgresql/data
+      - ./postgresql_statistics_database/docker-entrypoint.sh:/docker-entrypoint-initdb.d/initdb.sh
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: statistics_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+    healthcheck:
+      test: "pg_isready -U postgres"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   grpc-tasks-service:
     build:
       context: .
@@ -59,6 +81,40 @@ services:
     ports:
       - "51075:51075"
   
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - '9092:9092'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+  stat_service:
+    build: 
+      context: .
+      dockerfile: stat_service.dockerfile
+    container_name: stat_service
+    depends_on:
+      - kafka
+      - zookeeper
+  
   rest-api:
     build:
       context: .
@@ -71,6 +127,8 @@ services:
     depends_on:
       - postgres_users_db
       - grpc-tasks-service
+      - kafka
+      - zookeeper
   
   adminer:
       image: adminer

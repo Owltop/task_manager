@@ -4,7 +4,7 @@ import "google/protobuf/timestamp.proto";
 
 service TaskManager { 
    rpc CreateTask(Task) returns (TaskResponse) {}
-   rpc UpdateTask(TaskWithId) returns (TaskResponse) {}
+   rpc UpdateTask(Task) returns (TaskResponse) {}
    rpc DeleteTask(TaskShort) returns (TaskResponse) {} // need user_id to identify user
    rpc GetTasks(Pagination) returns (Tasks) {} // if user_id is not null - only his tasks
    rpc GetTaskById(TaskShort) returns (Task) {}
@@ -16,15 +16,11 @@ message Task {
     google.protobuf.Timestamp dateOfCreation = 3;
     google.protobuf.Timestamp deadline = 4;
     uint64 status = 5;
+    uint64 id = 6;
 }
 
 message Tasks {
     repeated Task tasks = 1;
-}
-
-message TaskWithId {
-    uint64 id = 1;
-    Task task = 2;
 }
 
 message TaskShort {

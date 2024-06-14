@@ -1,19 +1,17 @@
 openapi: 3.0.0
 info:
-  title: Flask User Management API
-  description: API for user registration, updating user information, and user authentication.
+  title: Task Management API
   version: 1.0.0
-
-servers:
-  - url: http://localhost:5001
-    description: Local Flask server
-
+paths:
+  openapi: 3.0.0
+info:
+  title: User Service API
+  version: 1.0.0
 paths:
   /register:
     post:
       summary: Register a new user
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -21,72 +19,396 @@ paths:
               properties:
                 username:
                   type: string
+                  description: The username for the new user
                 password:
                   type: string
+                  description: The password for the new user
               required:
-              - username
-              - password
+                - username
+                - password
       responses:
-        '200':
+        200:
           description: User successfully registered
-        '404':
-          description: Missing login or password
-        '400':
-          description: User already exist
-
-  /update:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /update_user:
     put:
       summary: Update user information
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                token:
-                  type: string
                 first_name:
                   type: string
+                  description: The user's first name
                 last_name:
                   type: string
+                  description: The user's last name
                 date_of_birth:
                   type: string
+                  format: date
+                  description: The user's date of birth
                 email:
                   type: string
+                  format: email
+                  description: The user's email address
                 phone_number:
                   type: string
-              required:
-              - token
+                  description: The user's phone number
       responses:
-        '200':
-          description: User information successfully updated
-        '400':
-          description: Token is missing
-        '401':
+        200:
+          description: User information updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        401:
           description: Invalid token
-
-  /authenticate:
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /delete_user:
+    delete:
+      summary: Delete a user
+      parameters:
+        - in: header
+          name: token
+          schema:
+            type: string
+          required: true
+      responses:
+        200:
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        401:
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+  /create_task:
     post:
-      summary: Authenticate user
+      summary: Create a new task
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
-                username:
+                description:
                   type: string
-                password:
+                  description: The description of the task
+                deadline:
                   type: string
+                  format: date-time
+                  description: The deadline for the task (optional)
               required:
-              - username
-              - password
+                - description
       responses:
-        '200':
-          description: User authenticated successfully
-        '401':
-          description: User does not exist or password is wrong
-        '404':
-          description: Missing login or password
+        200:
+          description: Task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: The ID of the created task
+        400:
+          description: Missing description field or token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /get_tasks:
+    get:
+      summary: Get a list of tasks
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: The offset for pagination
+        - in: query
+          name: size
+          schema:
+            type: integer
+          description: The number of tasks to retrieve
+        - in: query
+          name: show_my_tasks
+          schema:
+            type: integer
+          description: Whether to show only tasks created by the authenticated user (1 for yes, 0 for no)
+      responses:
+        200:
+          description: List of tasks retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: The ID of the task
+                    userId:
+                      type: integer
+                      description: The ID of the user who created the task
+                    content:
+                      type: string
+                      description: The description of the task
+                    deadline:
+                      type: string
+                      format: date-time
+                      description: The deadline for the task
+                    status:
+                      type: integer
+                      description: The status of the task (0 for pending, 1 for completed)
+        400:
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /get_task_by_id:
+    get:
+      summary: Get a task by ID
+      parameters:
+        - in: query
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: The ID of the task
+        - in: query
+          name: show_my_task
+          schema:
+            type: integer
+          description: Whether to show only tasks created by the authenticated user (1 for yes, 0 for no)
+      responses:
+        200:
+          description: Task retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        400:
+          description: Missing id of the task or token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+  /comment_task:
+    post:
+      summary: Add a comment to a task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: integer
+                  description: The ID of the task to comment on
+                comment:
+                  type: string
+                  description: The comment to add
+              required:
+                - task_id
+                - comment
+      responses:
+        200:
+          description: Comment added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'OK'
+        400:
+          description: Missing token or data, or invalid format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'Server error'
+  /like_task:
+    put:
+      summary: Like a task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task_id:
+                  type: integer
+                  description: The ID of the task to like
+              required:
+                - task_id
+      responses:
+        200:
+          description: Task liked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'OK'
+        400:
+          description: Missing token or data, or invalid format
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'Server error'
+  /ping:
+    get:
+      summary: Ping the server
+      responses:
+        200:
+          description: Server is up and running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    description: 'OK'

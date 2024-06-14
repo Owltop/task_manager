@@ -46,7 +46,7 @@ class TaskManagerStub(object):
                 _registered_method=True)
         self.UpdateTask = channel.unary_unary(
                 '/TaskManager/UpdateTask',
-                request_serializer=tasks__pb2.TaskWithId.SerializeToString,
+                request_serializer=tasks__pb2.Task.SerializeToString,
                 response_deserializer=tasks__pb2.TaskResponse.FromString,
                 _registered_method=True)
         self.DeleteTask = channel.unary_unary(
@@ -109,7 +109,7 @@ def add_TaskManagerServicer_to_server(servicer, server):
             ),
             'UpdateTask': grpc.unary_unary_rpc_method_handler(
                     servicer.UpdateTask,
-                    request_deserializer=tasks__pb2.TaskWithId.FromString,
+                    request_deserializer=tasks__pb2.Task.FromString,
                     response_serializer=tasks__pb2.TaskResponse.SerializeToString,
             ),
             'DeleteTask': grpc.unary_unary_rpc_method_handler(
@@ -180,7 +180,7 @@ class TaskManager(object):
             request,
             target,
             '/TaskManager/UpdateTask',
-            tasks__pb2.TaskWithId.SerializeToString,
+            tasks__pb2.Task.SerializeToString,
             tasks__pb2.TaskResponse.FromString,
             options,
             channel_credentials,

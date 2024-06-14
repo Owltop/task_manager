@@ -13,3 +13,12 @@ def hash_password(password):
 
 def generate_token():
     return ''.join(random.choices(string.ascii_letters + string.digits, k=30))
+
+
+def is_convertible_to_int(obj):
+    try:
+        int(obj)
+        return True
+    except ValueError:
+        return False
+
