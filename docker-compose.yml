@@ -114,6 +114,9 @@ services:
     depends_on:
       - kafka
       - zookeeper
+      - postgres_statistics_db
+    ports:
+      - "51076:51075"
   
   rest-api:
     build:
@@ -124,11 +127,13 @@ services:
       - "5001:5001"
     environment:
       GRPC_TASKS_SERVER_ADDR: task_manager_grpc_server:51075
+      GRPC_TASKS_STATISTICS_SERVER_ADDR: stat_service:51075
     depends_on:
       - postgres_users_db
       - grpc-tasks-service
       - kafka
       - zookeeper
+      - stat_service
   
   adminer:
       image: adminer

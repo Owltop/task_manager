@@ -262,7 +262,7 @@ class TaskManagerServicer(proto.tasks_pb2_grpc.TaskManagerServicer):
                 conn.close()
 
 
-logging.basicConfig(level=logging.DEBUG)  # Установите уровень логирования
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
 proto.tasks_pb2_grpc.add_TaskManagerServicer_to_server(TaskManagerServicer(), server)

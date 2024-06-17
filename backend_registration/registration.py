@@ -5,9 +5,12 @@ from kafka import KafkaProducer
 
 from proto import tasks_pb2
 from proto import tasks_pb2_grpc
+from proto import tasks_statistics_pb2
+from proto import tasks_statistics_pb2_grpc
 import google.protobuf.empty_pb2
 import google.protobuf.json_format
 import google.protobuf.json_format as json_format
+from google.protobuf.empty_pb2 import Empty
 import grpc
 
 import logging
@@ -45,6 +48,57 @@ def get_user_id_by_token(token):
             cursor.close()
         if conn is not None:
             conn.close()
+
+def get_login_by_user_id(user_id):
+    try:
+        cursor = None
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        query = "SELECT username FROM users WHERE id = %d;" % (user_id)
+        cursor.execute(query)
+        user = cursor.fetchone()
+        if user:
+            username = user[0]
+            return username
+    except Exception as e:
+        conn.rollback()
+        return "unregistered user"
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if conn is not None:
+            conn.close()
+
+def get_login_by_task_id(task_id):
+    try:
+        proto = tasks_pb2.TaskShort()
+        json_data = {
+            "id": int(task_id)
+        }
+
+        app.logger.debug(json_data)
+
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+
+        app.logger.debug(proto)
+        grpc_server_address = os.environ.get('GRPC_TASKS_SERVER_ADDR', 'localhost:51075')
+        app.logger.debug(grpc_server_address)
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_pb2_grpc.TaskManagerStub(channel)
+        response = stub.GetTaskById(proto)
+        
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug(res)
+
+        user_id = int(res['userId'])
+        app.logger.debug(user_id)
+        return get_login_by_user_id(user_id)
+
+    except Exception as e:
+        return "undefined_login"
+
+
 
 def create_kafka_producer():
     while True:
@@ -501,6 +555,124 @@ def like_task():
 @app.route('/ping', methods=['GET'])
 def ping():
     return jsonify({'status': 'OK'}), 200
+
+@app.route('/get_task_statistics', methods=['GET'])
+def get_task_statistics():
+    token = request.headers.get('token')
+
+    data = request.json
+    task_id = data.get('task_id')
+
+    if not token or not task_id:
+        return jsonify({'message': 'Token or data is missing'}), 400
+    if not util.is_convertible_to_int(task_id):
+        return jsonify({'message': 'Invalid format'}), 400
+    
+    try:
+        proto = tasks_statistics_pb2.TaskId()
+        json_data = {
+            "id": int(task_id)
+        }
+
+        app.logger.debug(json_data)
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+        app.logger.debug(proto)
+
+        grpc_server_address = os.environ.get('GRPC_TASKS_STATISTICS_SERVER_ADDR', 'localhost:51076')
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_statistics_pb2_grpc.StatisticsManagerStub(channel)
+        response = stub.GetTaskStatistics(proto)
+        
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug(res)
+        code = 200
+        if response.status != "":
+            code = 400 # TODO: more accurate with cods
+        return res, code
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_top_five_tasks', methods=['GET'])
+def get_top_five_tasks():
+    token = request.headers.get('token')
+
+    data = request.json
+    parameter = data.get('parameter')
+
+    if not token or not parameter:
+        return jsonify({'message': 'Token or data is missing'}), 400
+    if parameter != 'likes' and parameter != 'comments':
+        return jsonify({'message': 'Invalid parameter'}), 400
+    
+    try:
+        proto = tasks_statistics_pb2.Top5Request()
+        json_data = {
+            "parameter": parameter
+        }
+
+        app.logger.debug(json_data)
+        json_format.ParseDict(json_data, proto, ignore_unknown_fields=True)
+        app.logger.debug(proto)
+
+        grpc_server_address = os.environ.get('GRPC_TASKS_STATISTICS_SERVER_ADDR', 'localhost:51076')
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_statistics_pb2_grpc.StatisticsManagerStub(channel)
+        response = stub.GetTop5Tasks(proto)
+        
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug(res)
+        code = 200
+        if response.status != "":
+            code = 400 # TODO: more accurate with cods
+            return res, code
+        # success branch
+        for task_stat in res["tasks"]:
+            task_stat["userLogin"] = get_login_by_task_id(int(task_stat["id"]))
+            app.logger.debug("task_stat")
+            app.logger.debug(task_stat)
+        return res
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get_top_three_users', methods=['GET'])
+def get_top_three_users():
+    token = request.headers.get('token')
+
+    if not token:
+        return jsonify({'message': 'Token is missing'}), 400
+    
+    try:
+        proto = Empty()
+        grpc_server_address = os.environ.get('GRPC_TASKS_STATISTICS_SERVER_ADDR', 'localhost:51076')
+        app.logger.debug(grpc_server_address)
+
+        channel = grpc.insecure_channel(grpc_server_address)
+        stub = tasks_statistics_pb2_grpc.StatisticsManagerStub(channel)
+        response = stub.GetTop3Users(proto)
+        
+        res = google.protobuf.json_format.MessageToDict(response)
+        app.logger.debug(res)
+        code = 200
+        if response.status != "":
+            code = 400 # TODO: more accurate with cods
+            return res, code
+        # success branch
+        for user_stat in res["userStatistics"]:
+            user_stat["userLogin"] = get_login_by_user_id(int(user_stat.pop("userId")))
+            app.logger.debug("user_stat")
+            app.logger.debug(user_stat)
+        return res
+
+        
+    except Exception as e:
+        app.logger.debug(str(e))
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

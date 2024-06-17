@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+
+service StatisticsManager { 
+    rpc GetTaskStatistics(TaskId) returns (TaskStatisticsResponse) {}
+    rpc GetTop5Tasks(Top5Request) returns (ArrayOfTasksStatistics) {}
+    rpc GetTop3Users(google.protobuf.Empty) returns (ArrayOfUsersLikesStatistics) {}
+ }
+
+message TaskId {
+    uint64 id = 1;
+}
+
+message Top5Request {
+    string parameter = 1; // "likes" or "comments"
+}
+
+message TaskStatisticsResponse {
+    uint64 id = 1;
+    uint64 likes = 2;
+    uint64 comments = 3;
+    string status = 4;
+}
+
+message ArrayOfTasksStatistics {
+    repeated TaskStatisticsResponse tasks = 1;
+    string status = 2;
+}
+
+message UserLikeStatistics {
+    uint64 userId = 1;
+    uint64 likesCount = 2;
+}
+
+message ArrayOfUsersLikesStatistics {
+    repeated UserLikeStatistics userStatistics = 1;
+    string status = 2;
+}
