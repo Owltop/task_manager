@@ -1,0 +1,36 @@
+curl -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "example_user3", "password": "esxample_password"}'
+
+curl -X PUT http://localhost:5001/_user -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"email": "kek@yвa.ru"}'
+
+curl -X POST http://localhost:5001/create_task -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"description": "test48"}'
+
+curl -X PUT http://localhost:5001/update_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"id": 22, "content": "abdfabab"}'
+
+curl -X DELETE http://localhost:5001/delete_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"id": 21}'
+
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"size": 100}'
+
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"size": 5, "offset": 2, "show_my_tasks": 0}'
+
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"size": 2, "show_my_tasks": 0}'
+
+curl -X GET http://localhost:5001/get_tasks -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"size": 100, "show_my_tasks": 1}'
+
+curl -X GET http://localhost:5001/get_task_by_id -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"id": 21}'
+
+curl -v -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "eexample_user3", "password": "esxample_password"}' 
+
+curl -v -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "eexample_user3", "password": "esxample_password"}' 
+
+curl -v -X PUT http://localhost:5001/like_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"task_id": 24}' 
+
+curl -v -X POST http://localhost:5001/comment_task -H "Content-Type: application/json" -H "token: EKDebtkqwWQ7DQ5uwUR9w5KdMwdImy" -d '{"task_id": 23, "comment": "test1"}' 
+
+curl -v -X GET http://localhost:5001/get_task_statistics -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"task_id": 22}' 
+
+curl -v -X GET http://localhost:5001/get_top_five_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"parameter": "likes"}' 
+
+curl -v -X GET http://localhost:5001/get_top_five_tasks -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"parameter": "comments"}' 
+
+curl -v -X GET http://localhost:5001/get_top_three_users -H "Content-Type: application/json" -H "token: WGfg2yvBhFD2HWgt32zdpwE8EF976v" -d '{"parameter": "comments"}' 
+

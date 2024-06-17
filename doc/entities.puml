@@ -3,11 +3,13 @@
 entity "User" as user {
   *id : size_t
   --
-  *username : text
-  *login : text
+  *username(login) : text
   *password : text
-  *date_of_registration: timestamp
-  *status: size_t
+  *first_name : text
+  *last_name : text
+  *email : text
+  *phone_number : text
+  *date_of_birth: timestamp
 }
 
 entity "Task" as task {

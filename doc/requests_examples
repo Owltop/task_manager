@@ -1,0 +1,3 @@
+curl -X POST http://localhost:5001/register -H "Content-Type: application/json" -d '{"username": "example_user31", "password": "example_password"}'
+curl -X POST http://localhost:5001/authenticate -H "Content-Type: application/json" -d '{"username": "example_user31", "password": "example_password"}'
+curl -X PUT http://localhost:5001/update -H "Content-Type: application/json" -d '{"token": "UTSa4onAlbrqW3tNby6bghe0mZWVms", "email": "kek@ya.ru"}'

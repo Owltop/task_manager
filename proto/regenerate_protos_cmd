@@ -1,0 +1,5 @@
+python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tasks.proto
+
+python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tasks_statistics.proto
+
+// TODO: regenerate protos  tithout changing dirs

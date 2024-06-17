@@ -21,7 +21,7 @@ Container(statistics_service, "Сервис статистик", "Python", "Се
 Container(tasks_service, "Сервис задач", "Python", "Отслеживает задачи и комментарии", "python")
 
 Container(statistics_database, "База данных для статистки", "Clickhouse", "Хранит информацию о статистике", "database")
-Container(users_database, "База данных для хранения информации о пользователях", "PostreSQL", "Хранит информацию о пользователях", "postgresql")
+Container(users_database, "База данных для хранения информации о пользователях", "SQLite", "Хранит информацию о пользователях", "database")
 Container(tasks_database, "База данных для хранения информации о задачах", "PostreSQL", "Хранит информацию о задчах", "postgresql")
 Container(message_broker, "Брокер сообщений", "rabbitMQ", "Передаёт статистику о комментариях и просмотрах", "rabbitmq")
 
